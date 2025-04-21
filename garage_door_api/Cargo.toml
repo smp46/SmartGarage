@@ -1,0 +1,15 @@
+[package]
+name = "garage_door_api"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+rppal = "0.14"
+axum-server = "0.7.2"
+simplelog = "0.12"
+log = "0.4"
+chrono = "0.4.40"
+headers = "0.4.0"
+dotenvy = "0.15.7"
