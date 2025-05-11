@@ -1,0 +1,6 @@
+*.jpg
+*.pth
+testing_imgs/
+training_imgs_sorted/
+sg/
+*.zip
