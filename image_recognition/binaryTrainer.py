@@ -18,16 +18,14 @@ from copy import deepcopy
 
 torch.set_float32_matmul_precision('high')
 
-# Define the Dataset Class
 class GarageDoorDataset(Dataset):
     def __init__(self, base_path, transform, classes):
         class0, class1 = classes
         self.transform = transform
-        # Load images and labels
         self.data = []
         for label, folder in enumerate([class0, class1]):
             folder_path = os.path.join(base_path, folder)
-            images = glob.glob(f'{folder_path}/*.jpg')  # Assuming images are in .jpg format
+            images = glob.glob(f'{folder_path}/*.jpg') 
             for image in images:
                 self.data.append((image, label))
 
@@ -43,7 +41,6 @@ class GarageDoorDataset(Dataset):
 
         return image, label
 
-# Training Function
 def train(model, train_loader, val_loader, criterion, optimizer, scheduler, device, num_epochs, early_stop_patience=5):
     model.train()
     scaler = GradScaler()
@@ -143,7 +140,6 @@ def validater(device, transform, model, val_base_path, classes):
     # Evaluate the model
     return evaluate(model, val_loader, device)
 
-# Function to evaluate the model
 def evaluate(model, val_loader, device):
     model.eval()
     total = 0
@@ -158,7 +154,6 @@ def evaluate(model, val_loader, device):
     accuracy = 100 * correct / total
     return accuracy
 
-    
 def predict(device, transform, model, image_path, classes):
     class0, class1 = classes
     model.eval()
@@ -172,11 +167,10 @@ def predict(device, transform, model, image_path, classes):
 
 def load_model(model_name):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
 
     weights = MobileNet_V3_Small_Weights.DEFAULT
     transform = weights.transforms()
-    
+
     # Load Pre-trained MobileNetV3-Large and Modify It
     model = mobilenet_v3_small(weights=MobileNet_V3_Small_Weights.DEFAULT)  # Initialize MobileNetV3
     model.classifier = nn.Sequential(
@@ -191,7 +185,7 @@ def load_model(model_name):
     model.to(device)
 
     model = torch.compile(model, mode="reduce-overhead")
-    
+
     return device, transform, model
 
 def save_config(model_name, what, classes):
@@ -213,7 +207,6 @@ def print_usage():
     print("  predict - Classify an image based on the trained model")
     print("  help, h, -h, --help - Display this help message\n")
 
-# Main function modified to handle command-line arguments
 def main():
     if len(sys.argv) != 2:
         print_usage()
@@ -226,7 +219,6 @@ def main():
         sys.exit(1)
 
     if action == 'train':
-        # Request input parameters for training
         image_path = input("Enter the path to the training images: ")
         what = input("What is the object you are trying to classify? ")
         classes = input("Enter the classification names separated by a comma: ").replace(" ", "").split(',')
@@ -234,11 +226,9 @@ def main():
         num_epochs = int(input("Enter the number of epochs: "))
         save_config(model_name, what, classes)
         
-        # Assume train_main function exists and handles these parameters
         train_main(classes, num_epochs, model_name, image_path)
 
     elif action == 'validate':
-        # Request input parameters for validation
         val_path = input("Enter the path to the validation images: ")
         config = load_config()
         device, transform, model = load_model(config['ModelName'])
@@ -248,12 +238,10 @@ def main():
         print(f'The model accuracy is {accuracy}%')
 
     elif action == 'predict':
-        # Request input parameters for prediction
         image_path = input("Enter the path to the image for prediction: ")
         config = load_config()
         device, transform, model = load_model(config['ModelName'])
         
-        # Assume predict function exists and handles these parameters
         prediction = predict(device, transform, model, image_path, config['Classes'].replace(" ", "").split(','))
         print(f"The {config['ClassifiedObject']} is {prediction}.")
     
