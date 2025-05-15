@@ -10,7 +10,7 @@ use rppal::gpio::{Gpio, OutputPin};
 use std::{net::SocketAddr, sync::Arc, fs::File};
 use tokio::{sync::Mutex, time::{sleep, Duration}};
 use axum_server::bind;
-use log::{info, LevelFilter};
+use log::{LevelFilter};
 use simplelog::{WriteLogger, Config};
 use std::env;
 use dotenvy::dotenv;
@@ -59,18 +59,25 @@ async fn toggle_handler(
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
     if auth.token() != secret {
+        println!("UNAUTHORIZED access attempt at {}", chrono::Local::now().to_rfc3339());
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    info!("Garage door toggled at {}", chrono::Local::now().to_rfc3339());
+    println!("Garage door toggled at {}", chrono::Local::now().to_rfc3339());
 
     let pin = pin.clone();
     tokio::spawn(async move {
-        let mut pin = pin.lock().await;
-        pin.set_high();
+        {
+            let mut pin = pin.lock().await;
+            pin.set_high();
+        } // Release mutex here
         sleep(Duration::from_secs(1)).await;
-        pin.set_low();
+        {
+            let mut pin = pin.lock().await;
+            pin.set_low();
+        }
     });
+
 
     Ok("Garage door toggled")
 }
