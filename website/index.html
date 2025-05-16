@@ -1,162 +1,214 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Garage</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Garage</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      background-color: #121212;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Roboto, sans-serif;
+        background-color: #121212;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
 
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px;
-      width: 100%;
-      max-width: 500px;
-    }
+      .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px;
+        width: 100%;
+        max-width: 500px;
+      }
 
-    .garage-frame {
-      width: 100%;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-      margin-bottom: 20px;
-    }
+      .garage-frame {
+        width: 100%;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        margin-bottom: 20px;
+      }
 
-    #garage-img {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
+      #garage-img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
 
-    button {
-      background-color: #1e88e5;
-      color: white;
-      padding: 14px 24px;
-      font-size: 18px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      width: 100%;
-    }
+      button {
+        background-color: #1e88e5;
+        color: white;
+        padding: 14px 24px;
+        font-size: 18px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        width: 100%;
+      }
 
-    button:hover {
-      background-color: #1565c0;
-    }
+      button:hover {
+        background-color: #1565c0;
+      }
 
-    .notification {
-      margin-top: 16px;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-size: 16px;
-      display: none;
-      width: 100%;
-      text-align: center;
-    }
+      .notification {
+        margin-top: 16px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 16px;
+        display: none;
+        width: 100%;
+        text-align: center;
+      }
 
-    .success {
-      background-color: #43a047;
-    }
+      .success {
+        background-color: #43a047;
+      }
 
-    .error {
-      background-color: #e53935;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="garage-frame">
-      <img id="garage-img" src="garage.jpg" alt="Garage Camera Feed">
+      .error {
+        background-color: #e53935;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="garage-frame">
+        <img id="garage-img" src="garage.jpg" alt="Garage Camera Feed" />
+      </div>
+      <button id="toggle-btn">Open/Close Garage Door</button>
+      <div id="notification" class="notification"></div>
     </div>
-    <button id="toggle-btn">Open/Close Garage Door</button>
-    <div id="notification" class="notification"></div>
-  </div>
 
-  <script>
-    const button = document.getElementById("toggle-btn");
-    const notification = document.getElementById("notification");
-    const garageImg = document.getElementById("garage-img");
+    <script>
+      const button = document.getElementById("toggle-btn");
+      const notification = document.getElementById("notification");
+      const garageImg = document.getElementById("garage-img");
 
-    button.addEventListener("click", () => {
-      fetch("/api/toggle", { method: "POST" })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error("Request failed with status " + res.status);
-        }
-        showNotification("Door toggled successfully", "success");
-      })
-      .catch(err => {
-        console.error("Error:", err);
-        showNotification("Failed to toggle door", "error");
+      button.addEventListener("click", () => {
+        fetch("/api/toggle", { method: "POST" })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Request failed with status " + res.status);
+            }
+            showNotification("Door toggled successfully", "success");
+          })
+          .catch((err) => {
+            console.error("Error:", err);
+            showNotification("Failed to toggle door", "error");
+          });
       });
-    });
 
-    function showNotification(message, type) {
-      notification.textContent = message;
-      notification.className = `notification ${type}`;
-      notification.style.display = "block";
+      function showNotification(message, type) {
+        notification.textContent = message;
+        notification.className = `notification ${type}`;
+        notification.style.display = "block";
 
-      setTimeout(() => {
-        notification.style.display = "none";
-      }, 2500);
-    }
+        setTimeout(() => {
+          notification.style.display = "none";
+        }, 2500);
+      }
 
-    // 🔄 Auto-refresh image every second
-    setInterval(() => {
-      const timestamp = new Date().getTime();
-      garageImg.src = `garage.jpg?t=${timestamp}`;
-    }, 500);
-  </script>
+      setInterval(() => {
+        const timestamp = new Date().getTime();
+        garageImg.src = `garage.jpg?t=${timestamp}`;
+      }, 500);
+    </script>
 
-  <script>
-    (function(){
-      function c() {
-        var b = a.contentDocument || a.contentWindow.document;
-        if (b) {
-          var d = b.createElement('script');
-          d.innerHTML = "window.__CF$cv$params={r:'933a7ec85e19d711',t:'MTc0NTIxMzQ4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
-          b.getElementsByTagName('head')[0].appendChild(d);
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'933a7ec85e19d711',t:'MTc0NTIxMzQ4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+
+      function testEndpoint() {
+        fetch("/api/test", { method: "POST" })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error("Test request failed with status " + res.status);
+            }
+            showTestResult("Test successful", true);
+          })
+          .catch((err) => {
+            console.error("Test Error:", err);
+            showTestResult("Test failed", false);
+          });
+      }
+
+      function showTestResult(message, isSuccess) {
+        showNotification(message, isSuccess ? "success" : "error");
+      }
+
+      let tapCount = 0;
+      let tapTimer = null;
+
+      function setupSecretTaps() {
+        const garageImg = document.getElementById("garage-img");
+
+        garageImg.addEventListener("click", handleTap);
+        garageImg.addEventListener("touchend", function (e) {
+          e.preventDefault(); 
+          handleTap();
+        });
+
+        function handleTap() {
+          tapCount++;
+
+          if (tapCount === 1) {
+            tapTimer = setTimeout(() => {
+              tapCount = 0;
+            }, 1500);
+          }
+
+          if (tapCount === 3) {
+            clearTimeout(tapTimer);
+            tapCount = 0;
+            testEndpoint();
+          }
         }
       }
-      if (document.body) {
-        var a = document.createElement('iframe');
-        a.height = 1;
-        a.width = 1;
-        a.style.position = 'absolute';
-        a.style.top = 0;
-        a.style.left = 0;
-        a.style.border = 'none';
-        a.style.visibility = 'hidden';
-        document.body.appendChild(a);
-        if ('loading' !== document.readyState) c();
-        else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c);
-        else {
-          var e = document.onreadystatechange || function() {};
-          document.onreadystatechange = function(b) {
-            e(b);
-            'loading' !== document.readyState && (document.onreadystatechange = e, c());
-          };
-        }
-      }
-    })();
-  </script>
-</body>
+
+      document.addEventListener("DOMContentLoaded", function () {
+        setupSecretTaps();
+      });
+    </script>
+  </body>
 </html>
-
