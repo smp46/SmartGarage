@@ -1,32 +1,33 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    routing::post,
-    Router,
-};
-use headers::{Authorization, HeaderMapExt};
-use headers::authorization::Bearer;
-use rppal::gpio::{Gpio, OutputPin};
-use std::{net::SocketAddr, sync::Arc, fs::File};
-use tokio::{sync::Mutex, time::{sleep, Duration}};
+use axum::{Router, extract::State, http::StatusCode, routing::post};
 use axum_server::bind;
-use log::{LevelFilter};
-use simplelog::{WriteLogger, Config};
-use std::env;
 use dotenvy::dotenv;
+use headers::authorization::Bearer;
+use headers::{Authorization, HeaderMapExt};
+use log::LevelFilter;
+use rppal::gpio::{Gpio, OutputPin};
+use simplelog::{Config, WriteLogger};
+use std::env;
+use std::{fs::File, net::SocketAddr, sync::Arc};
+use tokio::{
+    sync::Mutex,
+    time::{Duration, sleep},
+};
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok(); // Load from .env
-
+    dotenv().ok();
     let secret = env::var("SHARED_SECRET").expect("SHARED_SECRET must be set in .env");
+
+    let toggle_secret = secret.clone();
+    let test_secret = secret;
 
     // Init logger
     WriteLogger::init(
         LevelFilter::Info,
         Config::default(),
         File::create("./garage_door_api.log").expect("Could not create log file"),
-    ).expect("Failed to initialize logger");
+    )
+    .expect("Failed to initialize logger");
 
     // Init GPIO
     let gpio = Gpio::new().expect("Failed to access GPIO");
@@ -35,19 +36,42 @@ async fn main() {
 
     // Build app
     let app = Router::new()
-        .route("/toggle", post(move |state, headers| {
-            toggle_handler(state, headers, secret.clone())
-        }))
+        .route(
+            "/toggle",
+            post(move |state, headers| toggle_handler(state, headers, toggle_secret.clone())),
+        )
+        .route(
+            "/test",
+            post(move |headers| test_handler(headers, test_secret.clone())),
+        )
         .with_state(shared_pin);
 
     // Listen on all interfaces
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     println!("Listening on http://{}", addr);
 
-    bind(addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    bind(addr).serve(app.into_make_service()).await.unwrap();
+}
+
+async fn test_handler(
+    headers: axum::http::HeaderMap,
+    secret: String,
+) -> Result<&'static str, StatusCode> {
+    let auth = headers
+        .typed_get::<Authorization<Bearer>>()
+        .ok_or(StatusCode::UNAUTHORIZED)?;
+
+    if auth.token() != secret {
+        println!(
+            "UNAUTHORIZED test attempt at {}",
+            chrono::Local::now().to_rfc3339()
+        );
+        return Ok("UNAUTHORIZED, but request receieved");
+    }
+
+    println!("Test toggle at {}", chrono::Local::now().to_rfc3339());
+
+    Ok("toggle test complete")
 }
 
 async fn toggle_handler(
@@ -55,15 +79,22 @@ async fn toggle_handler(
     headers: axum::http::HeaderMap,
     secret: String,
 ) -> Result<&'static str, StatusCode> {
-    let auth = headers.typed_get::<Authorization<Bearer>>()
+    let auth = headers
+        .typed_get::<Authorization<Bearer>>()
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
     if auth.token() != secret {
-        println!("UNAUTHORIZED access attempt at {}", chrono::Local::now().to_rfc3339());
+        println!(
+            "UNAUTHORIZED access attempt at {}",
+            chrono::Local::now().to_rfc3339()
+        );
         return Err(StatusCode::UNAUTHORIZED);
     }
 
-    println!("Garage door toggled at {}", chrono::Local::now().to_rfc3339());
+    println!(
+        "Garage door toggled at {}",
+        chrono::Local::now().to_rfc3339()
+    );
 
     let pin = pin.clone();
     tokio::spawn(async move {
@@ -78,7 +109,5 @@ async fn toggle_handler(
         }
     });
 
-
     Ok("Garage door toggled")
 }
-
